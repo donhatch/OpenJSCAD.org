@@ -145,7 +145,22 @@ LightGLEngine.prototype = {
     // we need mobile detection to change the target element of controls:
     // otherwise we have to disable the build in html zoom on mobile , which is not always ideal
     const isMobile = typeof window.orientation !== 'undefined'
-    const element = this.containerEl // for now only use the canvas isMobile ? this.containerEl : document
+
+    let element;
+    if (false) {
+      // Before the fix to the editor that exposed the bug in interaction
+      element = isMobile ? this.containerEl : document
+    } else {
+      // After the fix to the editor that exposed the bug in interaction:
+      // https://github.com/jscad/OpenJSCAD.org/issues/315
+      // Note, to work well, needs a patch in most-gestures:
+      //   pushd ..
+      //   git clone https://github.com/donhatch/most-gestures-fixes.git
+      //   popd
+      //   npm link ../most-gestures-fixes
+      element = this.containerEl // for now only use the canvas isMobile ? this.containerEl : document
+    }
+
     const baseInteractions = baseInteractionsFromEvents(element)
     const gestures = pointerGestures(baseInteractions)
 
@@ -186,7 +201,7 @@ LightGLEngine.prototype = {
       .throttle(20)
       .forEach(function (zoom) {
         const coeff = (_this.viewpointZ - _this.options.camera.clip.min) / (_this.options.camera.clip.max - _this.options.camera.clip.min)
-        zoom *= zoomFactor * coeff
+        zoom *= zoomFactor / 5 * coeff
         _this.viewpointZ -= zoom //* (this.options.camera.clip.max - this.options.camera.clip.min)
         _this.viewpointZ = Math.min(Math.max(_this.viewpointZ, _this.options.camera.clip.min), _this.options.camera.clip.max)
         _this.onDraw()
@@ -312,21 +327,35 @@ LightGLEngine.prototype = {
     gl.rotate(this.angleZ, 0, 0, 1)
     // draw the solid (meshes)
     if (this.options.solid.draw) {
-      gl.enable(gl.BLEND)
-      if (!this.options.solid.overlay) gl.enable(gl.POLYGON_OFFSET_FILL)
-      for (var i = 0; i < this.meshes.length; i++) {
-        var mesh = this.meshes[i]
-        this.lightingShader.draw(mesh, gl.TRIANGLES)
+      if (this.options.solid.faces) {
+        gl.enable(gl.BLEND)
+        if (!this.options.solid.overlay) gl.enable(gl.POLYGON_OFFSET_FILL)
+        for (var i = 0; i < this.meshes.length; i++) {
+          var mesh = this.meshes[i]
+          this.lightingShader.draw(mesh, gl.TRIANGLES)
+        }
+        if (!this.options.solid.overlay) gl.disable(gl.POLYGON_OFFSET_FILL)
+        gl.disable(gl.BLEND)
       }
-      if (!this.options.solid.overlay) gl.disable(gl.POLYGON_OFFSET_FILL)
-      gl.disable(gl.BLEND)
 
       if (this.options.solid.lines) {
         if (this.options.solid.overlay) gl.disable(gl.DEPTH_TEST)
         gl.enable(gl.BLEND)
-        for (var i = 0; i < this.meshes.length; i++) {
-          var mesh = this.meshes[i]
-          this.blackShader.draw(mesh, gl.LINES)
+
+        // Hack to make sure the lines appear:
+        // draw them 8 times, with 8 different jitters.
+        let jit = .001;  // hard coded, won't always be right depending on scale
+        for (let iJitter = 0; iJitter < 8; ++iJitter) {
+          gl.pushMatrix();
+          gl.translate(((iJitter>>0)&1)*jit,
+                       ((iJitter>>1)&1)*jit,
+                       ((iJitter>>2)&1)*jit);
+
+          for (var i = 0; i < this.meshes.length; i++) {
+            var mesh = this.meshes[i]
+            this.blackShader.draw(mesh, gl.LINES)
+          }
+          gl.popMatrix();
         }
         gl.disable(gl.BLEND)
         if (this.options.solid.overlay) gl.enable(gl.DEPTH_TEST)

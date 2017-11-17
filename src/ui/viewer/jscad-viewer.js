@@ -87,12 +87,15 @@ Viewer.defaults = function () {
     },
     solid: {
       draw: true,              // draw or not
-      lines: false,             // draw outlines or not
+      lines: true,             // draw outlines or not
       faces: true,
       overlay: false,             // use overlay when drawing lines or not
+      //overlay: true,
       smooth: false,             // use smoothing or not
       faceColor: {r: 1.0, g: 0.4, b: 1.0, a: 1.0},        // default face color
-      outlineColor: {r: 0.0, g: 0.0, b: 0.0, a: 0.1}        // default outline color
+      //faceColor: {r: 1.0, g: 0.4, b: 1.0, a: .2},
+      //outlineColor: {r: 0.0, g: 0.0, b: 0.0, a: 0.1}        // default outline color
+      outlineColor: {r: 0.0, g: 0.0, b: 0.0, a: 1}  // opaque so I can see them!
     },
     background: {
       color: {r: 0.93, g: 0.93, b: 0.93, a: 1.0}
