@@ -201,7 +201,12 @@ LightGLEngine.prototype = {
       .throttle(20)
       .forEach(function (zoom) {
         const coeff = (_this.viewpointZ - _this.options.camera.clip.min) / (_this.options.camera.clip.max - _this.options.camera.clip.min)
-        zoom *= zoomFactor / 5 * coeff
+        //zoom *= zoomFactor / 5 * coeff
+        zoom *= zoomFactor * coeff
+        if (window.navigator.platform === 'MacIntel') {
+          // Work around https://github.com/jscad/OpenJSCAD.org/issues/302 "Zooming is too fast on Apple trackpad"
+          zoom /= 5;
+        }
         _this.viewpointZ -= zoom //* (this.options.camera.clip.max - this.options.camera.clip.min)
         _this.viewpointZ = Math.min(Math.max(_this.viewpointZ, _this.options.camera.clip.min), _this.options.camera.clip.max)
         _this.onDraw()
